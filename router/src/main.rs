@@ -77,6 +77,16 @@ struct Args {
     #[clap(long, env)]
     max_batch_requests: Option<usize>,
 
+    /// The capacity of the channel used to send batches from the batching task to the
+    /// inference backend. Increasing this value above the default of `1` enables pipeline
+    /// parallelism: the batching task can prepare the next batch while the backend is still
+    /// processing the current one, which can improve throughput at the cost of a small
+    /// increase in latency.
+    ///
+    /// Must be >= 1. Setting it to `1` (the default) preserves the original behavior.
+    #[clap(default_value = "1", long, env)]
+    batch_channel_capacity: usize,
+
     /// Control the maximum number of inputs that a client can send in a single request
     #[clap(default_value = "32", long, env)]
     max_client_batch_size: usize,
@@ -240,6 +250,12 @@ async fn main() -> Result<()> {
         .served_model_name
         .unwrap_or_else(|| args.model_id.clone());
 
+    if args.batch_channel_capacity == 0 {
+        return Err(anyhow::anyhow!(
+            "`--batch-channel-capacity` must be >= 1, got 0"
+        ));
+    }
+
     text_embeddings_router::run(
         args.model_id,
         args.revision,
@@ -266,6 +282,7 @@ async fn main() -> Result<()> {
         args.otlp_service_name,
         args.prometheus_port,
         args.cors_allow_origin,
+        args.batch_channel_capacity,
     )
     .await?;
 

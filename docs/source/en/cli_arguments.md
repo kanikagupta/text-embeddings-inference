@@ -91,6 +91,14 @@ Options:
 
           [env: MAX_BATCH_REQUESTS=]
 
+      --batch-channel-capacity <BATCH_CHANNEL_CAPACITY>
+          The capacity of the channel used to send batches from the batching task to the inference backend. Increasing this value above the default of `1` enables pipeline parallelism: the batching task can prepare the next batch while the backend is still processing the current one, which can improve throughput at the cost of a small increase in latency.
+
+          Must be >= 1. Setting it to `1` (the default) preserves the original behavior.
+
+          [env: BATCH_CHANNEL_CAPACITY=]
+          [default: 1]
+
       --max-client-batch-size <MAX_CLIENT_BATCH_SIZE>
           Control the maximum number of inputs that a client can send in a single request
 
